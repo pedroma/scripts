@@ -1,4 +1,5 @@
 from icalendar import Calendar
+from PyRSS2Gen import RSSItem, RSS2
 import re,urllib,feedparser
 
 ICAL_URL = 'http://www.pogdesign.co.uk/cat/download_ics/dd1cc774b062db1df0a594402f3ac10b'
@@ -34,6 +35,14 @@ print "Found",len(feeds),"feeds."
 entries = feedparser.FeedParserDict()
 for feed in feeds:
     entries.update(feed)
+
+
+items = [RSSItem(**item) for item in entries['items']]
+feeds = RSS2(title="My series feed",description="This feed is an aggregation of various feeds",link="",items = items)
+f = open('feed.xml','w')
+f.write(feeds.to_xml())
+f.close()
+
 
 # this section is for sorting the entries
 #decorated = [(entry["date_parsed"], entry) for entry in entries]
