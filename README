@@ -3,4 +3,5 @@ This is a personal repository created to store some scripts that I have written.
 The libraries used but not created by me will be referenced here:
  - iCalendar (http://pypi.python.org/pypi/icalendar/1.2)
  - Feedparser (http://www.feedparser.org/)
+ - PyRSS2Gen (http://www.dalkescientific.com/Python/PyRSS2Gen.html)
 
