@@ -23,30 +23,31 @@ print series
 # generate the rss urls
 hit_list = []
 for name in series:
-    feed = 'http://ezrss.it/search/index.php?show_name=%s&mode=rss'%name
+    name = urllib.quote(name)
+    feed = feedparser.parse('http://ezrss.it/search/index.php?show_name=%s&quality=720p&mode=rss'%name)
+    if len(feed['items'])==0:
+            feed = feedparser.parse('http://ezrss.it/search/index.php?show_name=%s&mode=rss'%name)
+    print feed.url
     hit_list.append(feed)
 
-print hit_list
-
 # get the feeds and join them in one big list
-feeds = [feedparser.parse(rss_url) for rss_url in hit_list]
+feeds = hit_list
 print "Found",len(feeds),"feeds."
 
-entries = feedparser.FeedParserDict()
+entries = []
 for feed in feeds:
-    entries.update(feed)
+    entries.extend(feed['items'])
 
+# this section is for sorting the entries
+decorated = [(entry["date_parsed"], entry) for entry in entries]
+decorated.sort()
+decorated.reverse()
+entries = [entry for (date,entry) in decorated]
 
-items = [RSSItem(**item) for item in entries['items']]
+items = [RSSItem(**item) for item in entries]
 feeds = RSS2(title="My series feed",description="This feed is an aggregation of various feeds",link="",items = items)
 f = open('feed.xml','w')
 f.write(feeds.to_xml())
 f.close()
 
-
-# this section is for sorting the entries
-#decorated = [(entry["date_parsed"], entry) for entry in entries]
-#decorated.sort()
-#decorated.reverse()
-#sorted = [entry for (date,entry) in decorated]
 
