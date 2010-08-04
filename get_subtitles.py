@@ -89,6 +89,6 @@ for video in videos_info:
         localFile.close()
         subprocess.Popen(['gzip','-d',subtitle_file]).wait()
         os.rename('%s/%s'%(path,subtitle_filename),'%s/%s%s'%(path,filename,video['subformat']))
-    except AttributeError:
+    except:
         print "Did not find subtitle for %s"%filename
 
