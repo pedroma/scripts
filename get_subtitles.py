@@ -78,17 +78,17 @@ for video in videos_info:
     path = '/'.join(video['file'].split('/')[:-1])
     for format in MOVIE_FORMATS:
         filename = filename.rstrip(format)
-    url = video['subdownloadlink']
-    webFile = urllib.urlopen(url)
-    subtitle_file = "%s/%s"%(path,url.split('/')[-1])
-    subtitle_filename = url.split('/')[-1].rstrip('.gz')
-    localFile = open(subtitle_file, 'w')
-    localFile.write(webFile.read())
-    webFile.close()
-    localFile.close()
-    subprocess.Popen(['gzip','-d',subtitle_file]).wait()
-    os.rename('%s/%s'%(path,subtitle_filename),'%s/%s%s'%(path,filename,video['subformat']))
-
-
-
+    try:
+        url = video['subdownloadlink']
+        webFile = urllib.urlopen(url)
+        subtitle_file = "%s/%s"%(path,url.split('/')[-1])
+        subtitle_filename = url.split('/')[-1].rstrip('.gz')
+        localFile = open(subtitle_file, 'w')
+        localFile.write(webFile.read())
+        webFile.close()
+        localFile.close()
+        subprocess.Popen(['gzip','-d',subtitle_file]).wait()
+        os.rename('%s/%s'%(path,subtitle_filename),'%s/%s%s'%(path,filename,video['subformat']))
+    except AttributeError:
+        print "Did not find subtitle for %s"%filename
 
