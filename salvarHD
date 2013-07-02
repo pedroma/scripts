@@ -1,0 +1,5 @@
+#!/bin/sh
+#chkconfig: 345 40 60
+# description: Simple script to disable hard-drive pauses
+
+sudo hdparm -B 255 /dev/sda

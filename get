@@ -1,0 +1,36 @@
+#!/bin/sh
+
+if [ $# -lt 1 ] ; then
+    echo "Not enough arguments"
+    echo "usage: $0 [links file]"
+    exit 0
+fi
+
+wget --save-cookies ~/.cookies/rapidshare --post-data "login=8592207&password=DXZygLwc" -O - https://ssl.rapidshare.com/cgi-bin/premiumzone.cgi > /dev/null
+
+#this removes empty lines from file
+echo "Cleaning up file"
+sed '/^$/d' $1
+
+line=0
+
+for i in `cat $1`
+    do
+        line=`expr $line + 1`
+        curl -i -X HEAD $i > head
+        filename=`sed -n 's/Content-Disposition: Attachment; filename=\(.*\)/\1/p' head`
+        filesize=`sed -n 's/Content-Length: \(.*\)/\1/p' head`
+        sleep 1
+        echo -n "Downloading file "
+        echo -n $filename
+        echo -n "with size "
+        echo -n $filesize
+        echo " bytes"
+        rm head
+        wget -c --load-cookies /home/pma/.cookies/rapidshare $i
+        echo -n "Downloaded "
+        echo $i
+        #check if filesize is correct
+        echo "Assuming it downloaded correctly"
+        #grep -v $i $1 > $1
+    done

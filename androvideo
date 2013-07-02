@@ -1,0 +1,195 @@
+#!/bin/bash
+####################################################################################
+# Androvideo - Harel Malka 2009
+# http://www.harelmalka.com
+#
+# A bash script to help convert video files for usage in the android based HTC G1/Magic 
+# handsets. I've done this script for myself mainly, so it assumes you're using a debian
+# based distro for the setup portion of the script. If you don't have apt, you'll have 
+# to do the leg work and get all the pre-equisites sorted out yourself.
+# The conversion is pretty straight forward but requires the h263 decode/encode libs
+# and ffmpeg to be compiled against them. When you perform the setup portion the script
+# will *attempt* to do all for you, but this is only an attempt. 
+# What is supposed to happen is:
+# 	* Get all build dependencies for ffmpeg via apt.
+# 	* Gets a few libs ffmpeg will need, subversion, checkinstall and build-essentials
+#	* Downloads the amr shared libs from http://www.penguin.cz/~utx/amr and attempts to compile/install
+#	* Gets latest ffmpeg from svn and attempts to compile/install with the amr libs included
+#	* Get rid of all downloaded files and compiled pre-install crap
+#
+# I could not have done this without the very good help from these resources:
+# http://www.linuxquestions.org/questions/linux-mobile-81/androidg1-and-video-converted-via-ffmpeg-h263-687163/
+# http://po-ru.com/diary/up-to-date-ffmpeg-on-ubuntu-hardy/
+# http://tldp.org/LDP/abs/html/ 
+# http://www.penguin.cz/~utx/amr
+#
+# some variable and function definitions
+
+RESOLUTION="480x320" # default resolution
+AUDIO_CHANNELS="1"
+AUDIO_SAMPLING_RATE="16000"
+AUDIO_BIT_RATE="32000"
+FRAME_RATE="13"
+declare -a VIDEO_FILES # array to hold the files to covert
+
+convert () {
+	echo "Converting ${1}"
+	ffmpeg -i "$1" -s "$RESOLUTION" -vcodec mpeg4 -acodec libfaac -ac 1 -ar "$AUDIO_SAMPLING_RATE" -r "$FRAME_RATE" -ab "$AUDIO_BIT_RATE" -aspect 3:2  "$1.mp4"
+}
+ 
+setup () {
+	# check if we're root
+	if [ "$UID" -ne "0" ]
+	then
+  		echo "You must be root to run the setup script."
+		exit 87 # Not root exit code
+	fi
+
+	# check for apt to get dependencies. Otherwise warn.
+	# Note that for ubuntu distro's prior to Jaunty replace libmp3lame-dev with liblame-dev
+	if which apt-get
+		then echo "Apt found. Getting dependencies"
+		sudo apt-get build-dep ffmpeg
+		sudo apt-get install libmp3lame-dev libfaad-dev libfaac-dev libxvidcore4-dev liba52-0.7.4 \
+			liba52-0.7.4-dev libx264-dev libdts-dev libgsm1-dev checkinstall build-essential subversion
+	else 
+		echo "Your system does not have Apt. You'll need to make sure you have the following dependencies:"
+		echo "liblame-dev libfaad-dev libfaac-dev libxvidcore4-dev liba52-0.7.4 "
+		echo "liba52-0.7.4-dev libx264-dev libdts-dev libgsm1-dev checkinstall build-essential subversion"
+		echo ""
+		echo "Continue [Y/N]"
+		read YESNO
+		if [ $YESNO != "Y" ] 
+		then echo "Sort it out, and run Setup again"
+		exit 1
+		fi
+			
+	fi
+
+  
+	echo "Performing setup. Please duck and cover."
+	# create a temp directory to work in
+	mkdir tmp-worker
+	cd tmp-worker
+	# download the amr libs to handle h263 decode/encode
+	wget "http://ftp.penguin.cz/pub/users/utx/amr/amrnb-7.0.0.2.tar.bz2"
+	wget "http://ftp.penguin.cz/pub/users/utx/amr/amrwb-7.0.0.3.tar.bz2"
+	# get ffmpeg from svn
+	svn checkout svn://svn.ffmpeg.org/ffmpeg/trunk ffmpeg
+	# unzip end untar
+	tar -xjvf amrnb-7.0.0.2.tar.bz2
+	tar -xjvf amrwb-7.0.0.3.tar.bz2
+	# configure, compile and install the libs
+	cd amrwb-7.0.0.3
+	./configure
+	make
+	make install
+	cd ../amrnb-7.0.0.2
+	./configure
+	make
+	make install
+	# configure compile and install latest ffmpeg with the h263 decoders
+	cd ffmpeg	
+	./configure  --enable-gpl --enable-libamr_nb --enable-libamr_wb --enable-libmp3lame \
+			--enable-libvorbis --enable-libfaac --enable-libfaad --enable-nonfree \
+			--enable-decoder=h263 --enable-encoder=h263
+	make
+	checkinstall
+	cd ../
+	rm -rf tmp-worker
+	echo "Done! Carry on..."
+}
+
+help () {
+	echo "This conversion works on HTC G1 or Magic models. "
+	echo "You're welcome to try on other OS/models as well (at own risk)."
+	echo ""
+	echo "Options:" 
+	echo "	-r	Video resolution. Default to 480x320"
+	echo "	-c	Number of audio channels. Default to 1." 
+	echo "	-sr	Audio sampling rate. Default to 16000"
+	echo "	-br	Audio bit rate. Default to 32000"
+	echo "	-fr	Frame rate. Default to 13 fps."
+	echo ""
+	echo "Androvideo can also attempt to setup required decoders and compile ffmpeg against them using:"
+	echo "	androvideo -s (or androvideo --setup) "
+	echo ""
+}
+
+##############################################################################
+# Start 
+echo "--------------------------------------------------------------------"
+echo "Androvideo - The Android video convertor"
+echo "Harel Malka, May 2009"
+echo "http://www.harelmalka.com"
+echo ""
+echo "Usage: androvideo [OPTIONS] [FILE] [FILE]... "
+echo "Try: 'androvideo -h' for more help"
+echo ""
+echo "THERE IS NO WARRANTY WHATSOEVER. USE AT OWN RISK!"
+echo "I AM NOT RESPONSIBLE FOR ANY DAMAGE CAUSED TO YOU OR YOUR COMPUTER."
+echo "--------------------------------------------------------------------"
+echo ""
+# work out the command line arguments
+while [ $# -gt 0 ]; do   
+	case "$1" in
+		-s|--setup)
+			setup
+			exit 1
+			;; 
+		-h|--help) 
+			help
+			exit 1
+			;;
+		-r)
+			RESOLUTION="$2"
+			shift
+			;;
+		-c)	
+			if [ "$2" -gt 2 ]
+			then 
+				echo "ERROR: -c (Audio channels) option must be 1 or 2"
+				exit 0
+			else
+				AUDIO_CHANNELS="$2"
+				shift
+			fi
+			;;
+		-sr)
+			AUDIO_SAMPLING_RATE="$2"
+			shift
+			;;
+		-br)
+			AUDIO_BIT_RATE="$2"
+			shift
+			;;
+		-fr)
+			FRAME_RATE="$2"
+			shift
+			;;
+		* )
+			VIDEO_FILES=( "${VIDEO_FILES[@]}" "$1" )
+			;;			
+	esac
+	shift       # Check next set of parameters.
+done
+
+# display conversion parameters
+echo "--------------------------------------------------"
+echo "Coversion parameters:"
+echo "	Resolution: ${RESOLUTION}"
+echo "	Audio Channels: ${AUDIO_CHANNELS}"
+echo "	Audio Sampling Rate: ${AUDIO_SAMPLING_RATE}"
+echo "	Audio Bit Rate: ${AUDIO_BIT_RATE}"
+echo "	Video Frame Rate: ${FRAME_RATE}"
+echo ""
+
+
+# perform the conversions
+for FILE in "${VIDEO_FILES[@]}"
+do
+	convert $FILE
+done
+ 
+
+

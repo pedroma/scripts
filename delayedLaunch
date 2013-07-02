@@ -1,0 +1,12 @@
+#!/bin/sh
+
+#if pidof conky | grep [0-9] > /dev/null
+#then
+#    exec killall conky
+#else
+
+sleep 30
+#sh /home/pma/.ConkyWizardLaunch &
+sh /home/pma/scripts/two_fingers.sh &
+exit
+#fi
