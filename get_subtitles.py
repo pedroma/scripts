@@ -47,7 +47,7 @@ for vid in videos:
 
 s = ServerProxy('http://api.opensubtitles.org/xml-rpc', allow_none=True)
 try:
-    res = s.LogIn('peddromcaraujo','58TRmLf6Tccl','SubDownloader','2.0.10')
+    res = s.LogIn('peddromcaraujo','58TRmLf6Tccl','en','VLSub')
     print "|INFO| ----- Connected Opensubtitles.org"
 except ProtocolError:
     print "|ERROR| ----- Opensubtitles.org is probably overloaded. Give it some time....."
